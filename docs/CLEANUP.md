@@ -1,5 +1,7 @@
 # Cleanup
 
+English | [日本語](CLEANUP.ja.md)
+
 Delete the resources in the reverse order they were created. CloudFormation
 cannot delete a stack while dependent resources it does not own still exist, so
 empty the retained S3 buckets and remove StackSet instances before deleting

@@ -26,9 +26,11 @@ class MultiAccountAssessment(OrganizationReportMixin):
         ou_ids=None,
         role_name="ObservabilityAssessmentRole",
         max_workers=5,
+        report_language="en",
     ):
         self.profile = profile
         self.region = region
+        self.report_language = report_language
         self.explicit_accounts = accounts
         self.ou_ids = ou_ids
         self.role_name = role_name
@@ -185,6 +187,7 @@ class MultiAccountAssessment(OrganizationReportMixin):
                     region=self.region,
                     role_arn=role_arn,
                     summary_report_filename=self.summary_report_filename,
+                    report_language=self.report_language,
                 )
             except ClientError as e:
                 # Every account — including the caller/management account — must run
@@ -207,6 +210,7 @@ class MultiAccountAssessment(OrganizationReportMixin):
                     region=self.region,
                     role_arn=None,
                     summary_report_filename=self.summary_report_filename,
+                    report_language=self.report_language,
                 )
             if not assessment.run_full_assessment():
                 return (account_id, None, "Could not get AWS identity")

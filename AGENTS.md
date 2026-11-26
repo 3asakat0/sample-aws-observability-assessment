@@ -56,7 +56,9 @@ the public classes and calls `observability_assessment.cli.main()`:
 `models.py` holds result data classes; `aws.py` holds AWS CLI execution and
 assumed-role handling; `discovery/` holds the check catalog, dispatch, and
 service checks; `scoring/` holds question definitions and maturity rules;
-`reporting/` holds CSV, evidence, recommendations, and HTML output;
+`reporting/` holds CSV, evidence, recommendations, and HTML output, plus the
+Japanese report text in `i18n_ja.py`, keyed by the exact English source
+strings (a test fails when a static string has no translation);
 `report_ui/` contains the Cloudscape React source; its compiled CSS and JS live
 in `observability_assessment/reporting/assets/` and are embedded in generated
 reports; `orchestration/` holds the multi-account runner.
@@ -129,7 +131,8 @@ Each `assess_*_maturity()` method contains per-question `if question_id == N:` b
   `https://github.com/aws-samples/sample-aws-observability-assessment.git`) at
   `AssessmentGitRef`, runs the assessment, and uploads HTML, CSV, and a
   timestamped ZIP report bundle. `ExpectedAssessmentCommitSha` can pin the
-  checked-out commit.
+  checked-out commit. `ReportLanguage` (`en` or `ja`) is passed as
+  `--report-language` only when it is not `en`.
 - For single-account mode, set `CreateAssessmentRole=yes` (the default) and leave `AssessmentAccounts` and `AssessmentOUs` empty. CodeBuild invokes the tool with `--role-arn` for the role created in the same account.
 - For multi-account mode, deploy template 1 to the target accounts, set `CreateAssessmentRole=no` in the central account, and provide either `AssessmentAccounts` or `AssessmentOUs`. `MultiAccountAssessment` assumes the target role separately in each account.
 

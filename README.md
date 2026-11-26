@@ -133,6 +133,11 @@ selection. When a CloudFormation template or IAM policy changes, update the
 deployed stack or StackSet before rerunning the assessment so its
 infrastructure and permissions remain aligned with the current repository.
 
+`ReportLanguage` selects the HTML report language, `en` (the default) or `ja`.
+The buildspec passes `--report-language` only when the value is not `en`, so
+an `AssessmentGitRef` that predates the option still builds with English
+reports.
+
 CodeBuild needs outbound HTTPS access to the host of `AssessmentRepoUrl`
 (`github.com` by default) to clone the repository, the configured Python
 package index to install dependencies, and
@@ -170,6 +175,7 @@ policy needed for OU discovery.
 | --- | --- |
 | `--profile` | AWS profile to use for authentication |
 | `--region` | AWS Region to assess (default: `us-west-2`) |
+| `--report-language` | HTML report language, `en` or `ja` (default: `en`) |
 | `--role-arn` | IAM role ARN to assume before running checks |
 | `--single-check N` | Run one discovery check by ID |
 | `--single-question N` | Run and score the checks for one question (1–17) |
@@ -225,6 +231,11 @@ Both HTML reports end with an assessment methodology section explaining the
 question levels, score calculation, and overall maturity bands.
 Coverage indicators distinguish unavailable checks, unassessed questions, and
 questions with partial evidence from fully assessed results.
+
+HTML reports are in English by default. With `--report-language ja`, the
+report UI, question text, maturity descriptions, check names, and
+recommendations are in Japanese. Per-question explanations, discovery
+evidence, CSV files, and console output stay in English.
 
 
 Each HTML report embeds its report data and compiled UI assets, so it can be

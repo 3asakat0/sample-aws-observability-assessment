@@ -7,6 +7,7 @@ import sys
 
 from .assessment import ComprehensiveObservabilityAssessment
 from .orchestration import MultiAccountAssessment
+from .reporting.i18n import SUPPORTED_REPORT_LANGUAGES
 
 
 def main():
@@ -15,6 +16,12 @@ def main():
     )
     parser.add_argument("--profile", help="AWS profile to use")
     parser.add_argument("--region", default="us-west-2", help="AWS region")
+    parser.add_argument(
+        "--report-language",
+        choices=SUPPORTED_REPORT_LANGUAGES,
+        default="en",
+        help="HTML report language (default: en)",
+    )
     parser.add_argument(
         "--role-arn", help="IAM role ARN to assume before running checks"
     )
@@ -84,12 +91,16 @@ def main():
             ou_ids=ou_list,
             role_name=args.cross_account_role,
             max_workers=args.max_workers,
+            report_language=args.report_language,
         )
         if not ma.run():
             sys.exit(1)
     else:
         assessment = ComprehensiveObservabilityAssessment(
-            profile=args.profile, region=args.region, role_arn=args.role_arn
+            profile=args.profile,
+            region=args.region,
+            role_arn=args.role_arn,
+            report_language=args.report_language,
         )
         if args.single_check is not None:
             succeeded = assessment.run_single_check(args.single_check)

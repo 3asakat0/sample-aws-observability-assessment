@@ -191,7 +191,7 @@ class CliContractTests(unittest.TestCase):
             cli.main()
 
         constructor.assert_called_once_with(
-            profile=None, region="us-east-1", role_arn=role_arn
+            profile=None, region="us-east-1", role_arn=role_arn, report_language="en"
         )
         constructor.return_value.run_assessment.assert_called_once_with()
         multi_constructor.assert_not_called()
@@ -334,6 +334,7 @@ class CliContractTests(unittest.TestCase):
             ou_ids=None,
             role_name="ObservabilityAssessmentRole",
             max_workers=5,
+            report_language="en",
         )
         multi_constructor.return_value.run.assert_called_once_with()
         constructor.assert_not_called()
@@ -362,6 +363,7 @@ class CliContractTests(unittest.TestCase):
             ou_ids=["ou-root-1111", "ou-child-2222"],
             role_name="ObservabilityAssessmentRole",
             max_workers=5,
+            report_language="en",
         )
         multi_constructor.return_value.run.assert_called_once_with()
         constructor.assert_not_called()
@@ -908,6 +910,7 @@ class MultiAccountContractTests(unittest.TestCase):
         multi.region = "us-east-1"
         multi.role_name = "CustomAssessmentRole"
         multi.summary_report_filename = "organization_summary_synthetic.html"
+        multi.report_language = "en"
         multi.management_account_id = ACCOUNT_A
         worker = Mock()
         worker.results = public.AssessmentResults(account_id=ACCOUNT_B)
@@ -925,6 +928,7 @@ class MultiAccountContractTests(unittest.TestCase):
             region="us-east-1",
             role_arn=f"arn:aws:iam::{ACCOUNT_B}:role/service-role/CustomAssessmentRole",
             summary_report_filename="organization_summary_synthetic.html",
+            report_language="en",
         )
         worker.run_full_assessment.assert_called_once_with()
 
@@ -936,6 +940,7 @@ class MultiAccountContractTests(unittest.TestCase):
         multi.region = "us-west-2"
         multi.role_name = "ObservabilityAssessmentRole"
         multi.summary_report_filename = "organization_summary_synthetic.html"
+        multi.report_language = "en"
         multi.management_account_id = ACCOUNT_A
         worker = Mock()
         worker.results = public.AssessmentResults(account_id=ACCOUNT_A)
@@ -975,6 +980,7 @@ class MultiAccountContractTests(unittest.TestCase):
         multi.region = "us-west-2"
         multi.role_name = "ObservabilityAssessmentRole"
         multi.summary_report_filename = "organization_summary_synthetic.html"
+        multi.report_language = "en"
         multi.management_account_id = ACCOUNT_A
 
         with patch.object(
@@ -995,6 +1001,7 @@ class MultiAccountContractTests(unittest.TestCase):
         multi.region = "us-west-2"
         multi.role_name = "ObservabilityAssessmentRole"
         multi.summary_report_filename = "organization_summary_synthetic.html"
+        multi.report_language = "en"
         multi.management_account_id = ACCOUNT_A
         worker = Mock()
         worker.run_full_assessment.return_value = False
@@ -1014,6 +1021,7 @@ class MultiAccountContractTests(unittest.TestCase):
         multi.region = "us-west-2"
         multi.role_name = "ObservabilityAssessmentRole"
         multi.summary_report_filename = "organization_summary_synthetic.html"
+        multi.report_language = "en"
         multi.management_account_id = ACCOUNT_A
 
         with patch.object(
@@ -1029,6 +1037,7 @@ class MultiAccountContractTests(unittest.TestCase):
     def test_success_only_score_aggregation_and_summary_shape(self):
         multi = object.__new__(public.MultiAccountAssessment)
         multi.summary_report_filename = "organization_summary_synthetic.html"
+        multi.report_language = "en"
         multi.org_results = public.OrganizationAssessmentResults(
             summary_report_filename=multi.summary_report_filename,
             account_results={

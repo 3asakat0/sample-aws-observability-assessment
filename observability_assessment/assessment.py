@@ -23,9 +23,11 @@ class ComprehensiveObservabilityAssessment(
         region="us-west-2",
         role_arn=None,
         summary_report_filename=None,
+        report_language="en",
     ):
         self.profile = profile
         self.region = region
+        self.report_language = report_language
         self.results = AssessmentResults()
         self.timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
         self.html_file = None  # Set after getting account_id

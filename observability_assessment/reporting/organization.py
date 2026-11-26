@@ -7,9 +7,10 @@ from datetime import datetime
 from pathlib import Path
 
 from .cloudscape_bridge import CATEGORIES, inline_report
+from .i18n import translate
 
 
-def organization_payload(results):
+def organization_payload(results, language="en"):
     """Build the organization data contract consumed by the report frontend."""
     assessed_count = len(results.account_results)
     failed_count = len(results.failed_accounts)
@@ -35,10 +36,11 @@ def organization_payload(results):
                 "id": account_id,
                 "name": results.account_names.get(account_id) or "",
                 "score": result.overall_score if has_score else None,
-                "maturity": (
+                "maturity": translate(
                     result.maturity_level or "Not assessed"
                     if has_score
-                    else "Not assessed"
+                    else "Not assessed",
+                    language,
                 ),
                 "status": (
                     "partial" if unavailable or not_assessed or partial else "success"
@@ -72,6 +74,7 @@ def organization_payload(results):
     return {
         "reportType": "organization",
         "meta": {
+            "language": language,
             "organizationId": results.organization_id,
             "generatedAt": datetime.now().astimezone().isoformat(timespec="seconds"),
         },
@@ -79,9 +82,12 @@ def organization_payload(results):
             "averageScore": results.overall_score_avg,
             "minScore": results.overall_score_min,
             "maxScore": results.overall_score_max,
-            "maturityLevel": results.maturity_level if scored_count else "Not assessed",
-            "bestMaturityLevel": (
-                results.best_maturity_level if scored_count else "Not assessed"
+            "maturityLevel": translate(
+                results.maturity_level if scored_count else "Not assessed", language
+            ),
+            "bestMaturityLevel": translate(
+                results.best_maturity_level if scored_count else "Not assessed",
+                language,
             ),
             "assessedAccounts": assessed_count,
             "scoredAccounts": scored_count,
@@ -91,7 +97,7 @@ def organization_payload(results):
         "categories": [
             {
                 "id": category_id,
-                "label": label,
+                "label": translate(label, language),
                 "score": results.category_scores_avg.get(source_category),
                 "min": results.category_scores_min.get(source_category),
                 "max": results.category_scores_max.get(source_category),
@@ -105,6 +111,7 @@ def organization_payload(results):
 def _fallback_html(payload):
     """Keep essential results and report links available without JavaScript."""
     summary = payload["summary"]
+    language = payload["meta"].get("language", "en")
     average = summary["averageScore"]
     average_display = f"{average:.1f}/4.0" if average is not None else "N/A"
     account_items = []
@@ -117,15 +124,21 @@ def _fallback_html(payload):
             link = html_mod.escape(account["link"], quote=True)
             account_items.append(f'<li><a href="{link}">{label}</a></li>')
         else:
-            error = html_mod.escape(str(account["error"] or "Unknown error"))
-            account_items.append(f"<li>{label}: Failed — {error}</li>")
+            error = html_mod.escape(
+                str(account["error"] or translate("Unknown error", language))
+            )
+            account_items.append(
+                f"<li>{label}: {translate('Failed', language)} — {error}</li>"
+            )
 
     return (
         "<main>"
-        "<h1>Organization Observability Assessment Summary</h1>"
-        f"<p>Accounts assessed: {summary['assessedAccounts']}/{summary['totalAccounts']}</p>"
-        f"<p>Average score: {average_display}</p>"
-        "<h2>Account reports</h2><ul>" + "".join(account_items) + "</ul></main>"
+        f"<h1>{translate('Organization Observability Assessment Summary', language)}</h1>"
+        f"<p>{translate('Accounts assessed', language)}: {summary['assessedAccounts']}/{summary['totalAccounts']}</p>"
+        f"<p>{translate('Average score', language)}: {average_display}</p>"
+        f"<h2>{translate('Account reports', language)}</h2><ul>"
+        + "".join(account_items)
+        + "</ul></main>"
     )
 
 
@@ -134,10 +147,11 @@ class OrganizationReportMixin:
 
     def generate_summary_report(self):
         """Generate a standalone Cloudscape organization summary report."""
-        payload = organization_payload(self.org_results)
+        language = getattr(self, "report_language", "en")
+        payload = organization_payload(self.org_results, language)
         html = inline_report(
             payload,
-            title="Organization Observability Assessment Summary",
+            title=translate("Organization Observability Assessment Summary", language),
             fallback=_fallback_html(payload),
         )
         report_path = Path("assessment-result") / self.summary_report_filename

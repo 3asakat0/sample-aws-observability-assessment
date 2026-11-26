@@ -19,6 +19,11 @@ Parameters:
     Description: AWS region to assess.
     Type: String
     Default: us-west-2
+  ReportLanguage:
+    Description: Language for HTML assessment reports (en or ja).
+    Type: String
+    AllowedValues: [en, ja]
+    Default: en
   CreateAssessmentRole:
     Description: >-
       Set to 'yes' for single-account mode (creates the assessment role in this account).
@@ -323,6 +328,9 @@ Resources:
           - Name: ASSESSMENT_REGION
             Value: !Ref AssessmentRegion
             Type: PLAINTEXT
+          - Name: REPORT_LANGUAGE
+            Value: !Ref ReportLanguage
+            Type: PLAINTEXT
           - Name: ASSESSMENT_ACCOUNTS
             Value: !Ref AssessmentAccounts
             Type: PLAINTEXT
@@ -404,6 +412,10 @@ Resources:
                     exit 1
                   fi
                   MULTI_ACCOUNT_FLAGS=""
+                  REPORT_LANGUAGE_FLAGS=()
+                  if [ "${REPORT_LANGUAGE:-en}" != "en" ]; then
+                    REPORT_LANGUAGE_FLAGS=(--report-language "$REPORT_LANGUAGE")
+                  fi
                   if [ -n "${ASSESSMENT_ACCOUNTS:-}" ]; then
                     MULTI_ACCOUNT_FLAGS="--accounts $ASSESSMENT_ACCOUNTS"
                   elif [ -n "${ASSESSMENT_OUS:-}" ]; then
@@ -411,11 +423,11 @@ Resources:
                   fi
                   if [ -n "$MULTI_ACCOUNT_FLAGS" ]; then
                     echo "Running multi-account assessment: ${MULTI_ACCOUNT_FLAGS}"
-                    python3 assessment-src/observability_assessment_comprehensive.py --region "$ASSESSMENT_REGION" $MULTI_ACCOUNT_FLAGS
+                    python3 assessment-src/observability_assessment_comprehensive.py --region "$ASSESSMENT_REGION" $MULTI_ACCOUNT_FLAGS ${REPORT_LANGUAGE_FLAGS[@]+"${REPORT_LANGUAGE_FLAGS[@]}"}
                   else
                     ROLE_ARN="arn:${PARTITION}:iam::${ACCOUNT_ID}:role/service-role/ObservabilityAssessmentRole"
                     echo "Assuming assessment role: ${ROLE_ARN}"
-                    python3 assessment-src/observability_assessment_comprehensive.py --region "$ASSESSMENT_REGION" --role-arn "$ROLE_ARN"
+                    python3 assessment-src/observability_assessment_comprehensive.py --region "$ASSESSMENT_REGION" --role-arn "$ROLE_ARN" ${REPORT_LANGUAGE_FLAGS[@]+"${REPORT_LANGUAGE_FLAGS[@]}"}
                   fi
                 - |
                   set -euo pipefail

@@ -1,6 +1,8 @@
 // Copyright Amazon.com, Inc. or its affiliates. All Rights Reserved.
 // SPDX-License-Identifier: MIT-0
 
+import { createTranslator, reportLanguage } from './i18n';
+
 export interface Category {
   id: string;
   label: string;
@@ -44,6 +46,7 @@ export interface DiscoveryCheck {
 export interface SingleAccountReport {
   reportType?: 'single-account';
   meta: {
+    language?: string;
     accountId: string;
     region: string;
     generatedAt: string;
@@ -88,6 +91,7 @@ export interface Account {
 export interface OrganizationReport {
   reportType: 'organization';
   meta: {
+    language?: string;
     organizationId: string;
     generatedAt: string;
   };
@@ -112,33 +116,43 @@ function isObject(value: unknown): value is Record<string, unknown> {
   return typeof value === 'object' && value !== null && !Array.isArray(value);
 }
 
+export function embeddedReportLanguage() {
+  try {
+    const data = JSON.parse(document.getElementById('assessment-data')?.textContent || '');
+    return reportLanguage(data?.meta?.language);
+  } catch {
+    return 'en' as const;
+  }
+}
+
 export function parseReport(): Report {
+  const t = createTranslator(embeddedReportLanguage());
   const script = document.getElementById('assessment-data');
   if (!script || script.tagName !== 'SCRIPT' || script.getAttribute('type') !== 'application/json') {
-    throw new Error('Embedded assessment data was not found.');
+    throw new Error(t('Embedded assessment data was not found.'));
   }
 
   let data: unknown;
   try {
     data = JSON.parse(script.textContent || '');
   } catch {
-    throw new Error('Embedded assessment data is not valid JSON.');
+    throw new Error(t('Embedded assessment data is not valid JSON.'));
   }
 
   if (!isObject(data) || !isObject(data.meta) || !isObject(data.summary) || !Array.isArray(data.categories)) {
-    throw new Error('Embedded assessment data is missing required report sections.');
+    throw new Error(t('Embedded assessment data is missing required report sections.'));
   }
   if (data.reportType === 'organization') {
     if (!Array.isArray(data.accounts)) {
-      throw new Error('Organization assessment data is missing accounts.');
+      throw new Error(t('Organization assessment data is missing accounts.'));
     }
     return data as unknown as OrganizationReport;
   }
   if (data.reportType !== undefined && data.reportType !== 'single-account') {
-    throw new Error('Embedded assessment data has an unsupported report type.');
+    throw new Error(t('Embedded assessment data has an unsupported report type.'));
   }
   if (!Array.isArray(data.questions) || !Array.isArray(data.discovery)) {
-    throw new Error('Single-account assessment data is missing questions or discovery checks.');
+    throw new Error(t('Single-account assessment data is missing questions or discovery checks.'));
   }
   return data as unknown as SingleAccountReport;
 }
@@ -153,10 +167,11 @@ export function countText(value: number | null | undefined): string {
   return typeof value === 'number' && Number.isFinite(value) ? String(value) : 'N/A';
 }
 
-export function timeText(value: string | null | undefined): string {
+export function timeText(value: string | null | undefined, language?: string): string {
   if (!value) return 'N/A';
   const date = new Date(value);
-  return Number.isNaN(date.getTime()) ? value : date.toLocaleString();
+  if (Number.isNaN(date.getTime())) return value;
+  return reportLanguage(language) === 'ja' ? date.toLocaleString('ja-JP') : date.toLocaleString();
 }
 
 export function safeHref(value: string | null | undefined): string | undefined {

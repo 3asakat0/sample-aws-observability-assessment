@@ -13,6 +13,7 @@ from urllib.parse import quote
 
 from observability_assessment.models import maturity_label
 from observability_assessment.scoring.orchestration import average_level
+from .i18n import translate
 
 
 ASSET_DIRECTORY = Path(__file__).resolve().parent / "assets"
@@ -124,11 +125,11 @@ def _discovery_evidence(assessment, check):
     }
 
 
-def _discovery_row(assessment, check):
+def _discovery_row(assessment, check, language):
     return {
         "id": check.id,
-        "name": check.name,
-        "category": check.category,
+        "name": translate(check.name, language),
+        "category": translate(check.category, language),
         "status": check.status,
         "command": check.command,
         **_discovery_evidence(assessment, check),
@@ -138,6 +139,7 @@ def _discovery_row(assessment, check):
 def assessment_payload(assessment):
     """Build the exact data contract consumed by the inline React application."""
     results = assessment.results
+    language = getattr(assessment, "report_language", "en")
     questions = results.assessment_checks
     discovery = results.discovery_checks
     assessed = [question for question in questions if question.assessed]
@@ -149,7 +151,7 @@ def assessment_payload(assessment):
         categories.append(
             {
                 "id": category_id,
-                "label": label,
+                "label": translate(label, language),
                 "score": average_level(members),
                 "assessedCount": sum(q.assessed for q in members),
                 "totalCount": len(members),
@@ -167,26 +169,30 @@ def assessment_payload(assessment):
             {
                 "id": question.question_id,
                 "category": category_ids[question.category],
-                "question": question.question,
+                "question": translate(question.question, language),
                 "assessed": question.assessed,
                 "level": question.current_level if question.assessed else None,
                 "levelLabel": (
-                    maturity_label(question.current_level)
+                    translate(maturity_label(question.current_level), language)
                     if question.assessed
-                    else "Not assessed"
+                    else translate("Not assessed", language)
                 ),
                 "explanation": question.explanation,
                 "evidenceCheckIds": list(question.evidence_check_ids),
                 "unavailableCheckIds": list(question.unavailable_check_ids),
                 "incompleteCheckIds": list(question.incomplete_check_ids),
                 "maturityDescriptions": [
-                    {"level": level, "description": description}
+                    {"level": level, "description": translate(description, language)}
                     for level, description in sorted(
                         question.maturity_descriptions.items()
                     )
                 ],
                 "recommendations": [
-                    {"title": title, "description": description, "url": url}
+                    {
+                        "title": translate(title, language),
+                        "description": translate(description, language),
+                        "url": url,
+                    }
                     for title, description, url in recommendations
                 ],
             }
@@ -194,6 +200,7 @@ def assessment_payload(assessment):
 
     return {
         "meta": {
+            "language": language,
             "accountId": results.account_id,
             "region": assessment.region,
             "generatedAt": datetime.now().astimezone().isoformat(timespec="seconds"),
@@ -201,7 +208,9 @@ def assessment_payload(assessment):
         },
         "summary": {
             "overallScore": results.overall_score if assessed else None,
-            "maturityLevel": results.maturity_level if assessed else "Not assessed",
+            "maturityLevel": translate(
+                results.maturity_level if assessed else "Not assessed", language
+            ),
             "discoveryEvaluated": sum(c.status == "success" for c in discovery),
             "discoveryTotal": len(discovery),
             "discoveryUnavailable": sum(c.status == "error" for c in discovery),
@@ -214,7 +223,9 @@ def assessment_payload(assessment):
         },
         "categories": categories,
         "questions": question_rows,
-        "discovery": [_discovery_row(assessment, check) for check in discovery],
+        "discovery": [
+            _discovery_row(assessment, check, language) for check in discovery
+        ],
     }
 
 
@@ -245,8 +256,12 @@ def inline_report(payload, *, title=None, fallback=""):
         payload, ensure_ascii=True, allow_nan=False, separators=(",", ":")
     )
     data = data.replace("&", "\\u0026").replace("<", "\\u003c").replace(">", "\\u003e")
+    language = "ja" if payload["meta"].get("language") == "ja" else "en"
     if title is None:
-        title = f"AWS Observability Assessment Report — {payload['meta']['accountId']}"
+        title = (
+            translate("AWS Observability Assessment Report", language)
+            + f" — {payload['meta']['accountId']}"
+        )
     safe_title = escape(str(title))
     if not fallback:
         summary = payload["summary"]
@@ -254,16 +269,16 @@ def inline_report(payload, *, title=None, fallback=""):
         score_text = f"{score:.1f}/4.0" if score is not None else "N/A"
         account = escape(str(payload["meta"]["accountId"]))
         fallback = (
-            "<main><h1>AWS Observability Assessment Report</h1>"
-            f"<p>Account: {account}</p>"
-            f"<p>Overall score: {score_text}</p>"
-            f"<p>Questions assessed: {summary['questionsAssessed']}/"
+            f"<main><h1>{translate('AWS Observability Assessment Report', language)}</h1>"
+            f"<p>{translate('Account', language)}: {account}</p>"
+            f"<p>{translate('Overall score', language)}: {score_text}</p>"
+            f"<p>{translate('Questions assessed', language)}: {summary['questionsAssessed']}/"
             f"{summary['questionsTotal']}</p></main>"
         )
     return f"""<!DOCTYPE html>
 <!-- Copyright Amazon.com, Inc. or its affiliates. All Rights Reserved. -->
 <!-- SPDX-License-Identifier: MIT-0 -->
-<html lang="en">
+<html lang="{language}">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">

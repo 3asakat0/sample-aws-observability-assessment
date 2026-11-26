@@ -25,6 +25,13 @@ summary includes `assessedAccounts` (successful assessments) and
 renders AWS evidence as text and accepts only HTTP(S) URLs or simple `.html`
 filenames for navigation.
 
+`meta.language` selects the UI language in both schemas: `ja` uses the
+Japanese strings in `src/i18n.ts` and wraps the app in Cloudscape's
+`I18nProvider` with its Japanese messages; an absent or unknown value renders
+English without the provider. The `en` and `ja` dictionaries must keep the
+same keys, which the type check enforces. The generator translates static
+payload text, such as question titles and check names, before embedding it.
+
 Both report views use Cloudscape TopNavigation and a light/dark mode control.
 The control applies Cloudscape's global mode and saves the preference when
 browser storage is available. Without a saved preference, the report follows
